@@ -2,9 +2,9 @@ import Cocoa
 import IOKit.pwr_mgt
 import ServiceManagement
 
-// Mug: a coffee mug in the menu bar. Click it to switch between
-//   filled mug  -> Mac stays awake: no idle sleep, no display sleep, no screen saver
-//   empty mug   -> Mac behaves normally
+// Caffeine: a coffee mug in the menu bar. Click it to switch between
+//   steaming cup -> Mac stays awake: no idle sleep, no display sleep, no screen saver
+//   empty mug    -> Mac behaves normally
 // A power assertion does the work; macOS drops it automatically if the app
 // quits or crashes, so the Mac can never get stuck awake.
 
@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         setAwake(UserDefaults.standard.bool(forKey: stateKey))
 
-        if ProcessInfo.processInfo.environment["MUG_SELFTEST"] == "1" { selfTest() }
+        if ProcessInfo.processInfo.environment["CAFFEINE_SELFTEST"] == "1" { selfTest() }
     }
 
     private func setAwake(_ on: Bool) {
@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isAwake = IOPMAssertionCreateWithName(
                 kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
                 IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                "Mug: keeping Mac awake" as CFString, &assertionID) == kIOReturnSuccess
+                "Caffeine: keeping Mac awake" as CFString, &assertionID) == kIOReturnSuccess
         } else if !on && isAwake {
             IOPMAssertionRelease(assertionID)
             isAwake = false
@@ -46,9 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        let name = isAwake ? "mug.fill" : "mug"
+        let name = isAwake ? "cup.and.heat.waves.fill" : "mug"
         let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
-        if let img = NSImage(systemSymbolName: name, accessibilityDescription: "Mug")?
+        if let img = NSImage(systemSymbolName: name, accessibilityDescription: "Caffeine")?
             .withSymbolConfiguration(config) {
             img.isTemplate = true
             button.image = img
@@ -68,12 +68,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showMenu() {
         let menu = NSMenu()
+        let status = NSMenuItem(title: isAwake ? "☕ On: Mac stays awake, no screen saver"
+                                               : "Off: Mac can sleep and show screen saver",
+                                action: nil, keyEquivalent: "")
+        status.isEnabled = false
+        menu.addItem(status)
+        menu.addItem(.separator())
         let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
         login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit Mug", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit Caffeine", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
